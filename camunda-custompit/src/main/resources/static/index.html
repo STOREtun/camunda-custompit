@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Flow - Bubble View</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .bubble-container {
+            min-height: calc(100vh - 200px);
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            position: relative;
+            overflow: visible;
+            border-radius: 1rem;
+            padding: 3rem 2rem;
+        }
+
+        .process-bubble {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #374151;
+            font-weight: 600;
+            font-size: 0.8rem;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            border: 2px solid #e5e7eb;
+            text-align: center;
+            line-height: 1.3;
+            padding: 1rem;
+            background: #ffffff;
+        }
+
+        /* CAMUNDA specific styling */
+        .process-bubble.camunda {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 3px solid #1976d2;
+            color: #0d47a1;
+            box-shadow: 0 8px 25px rgba(25, 118, 210, 0.2);
+        }
+
+        .process-bubble.camunda:hover {
+            background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
+            border-color: #0d47a1;
+            box-shadow: 0 12px 35px rgba(25, 118, 210, 0.3);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .process-bubble.camunda .type-badge {
+            background: #1976d2;
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-weight: bold;
+        }
+
+        .process-bubble.camunda .type-icon {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            color: #1976d2;
+            font-size: 1rem;
+        }
+
+        /* KAFKA specific styling */
+        .process-bubble.kafka {
+            background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+            border: 3px solid #7b1fa2;
+            color: #4a148c;
+            box-shadow: 0 8px 25px rgba(123, 31, 162, 0.2);
+        }
+
+        .process-bubble.kafka:hover {
+            background: linear-gradient(135deg, #e1bee7 0%, #ce93d8 100%);
+            border-color: #4a148c;
+            box-shadow: 0 12px 35px rgba(123, 31, 162, 0.3);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .process-bubble.kafka .type-badge {
+            background: #7b1fa2;
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-weight: bold;
+        }
+
+        .process-bubble.kafka .type-icon {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            color: #7b1fa2;
+            font-size: 1rem;
+        }
+
+        .process-bubble.selected {
+            transform: scale(1.1);
+            z-index: 20;
+        }
+
+        .process-bubble.camunda.selected {
+            box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.3);
+        }
+
+        .process-bubble.kafka.selected {
+            box-shadow: 0 0 0 4px rgba(123, 31, 162, 0.3);
+        }
+
+        .definition-key {
+            font-size: 0.75rem;
+            font-weight: 500;
+            word-break: break-word;
+            hyphens: auto;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .time-info {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffffff;
+            color: #6b7280;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 500;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .process-bubble:hover .time-info {
+            opacity: 1;
+        }
+
+        .bubble-arrow {
+            position: absolute;
+            top: 50%;
+            right: -30px;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 2px;
+            background: #d1d5db;
+            z-index: 5;
+        }
+
+        .bubble-arrow::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: -4px;
+            width: 0;
+            height: 0;
+            border-left: 12px solid #d1d5db;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+        }
+
+        .detail-modal {
+            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        @keyframes bubble-float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+
+        .process-bubble:not(.selected) {
+            animation: bubble-float 5s ease-in-out infinite;
+        }
+
+        .bubble-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+            min-height: 100%;
+            padding: 2rem 0;
+        }
+
+        .bubble-with-arrow {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Animation delays for different bubbles */
+        .process-bubble:nth-child(1) { animation-delay: 0s; }
+        .process-bubble:nth-child(2) { animation-delay: -1s; }
+        .process-bubble:nth-child(3) { animation-delay: -2s; }
+        .process-bubble:nth-child(4) { animation-delay: -3s; }
+        .process-bubble:nth-child(5) { animation-delay: -4s; }
+        .process-bubble:nth-child(6) { animation-delay: -0.5s; }
+        .process-bubble:nth-child(7) { animation-delay: -1.5s; }
+
+        /* Legend styles */
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 1rem;
+        }
+
+        .legend-bubble {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            border: 2px solid;
+        }
+
+        .legend-bubble.camunda {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-color: #1976d2;
+        }
+
+        .legend-bubble.kafka {
+            background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+            border-color: #7b1fa2;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1024px) {
+            .bubble-flow {
+                flex-direction: column;
+                gap: 3rem;
+            }
+
+            .bubble-arrow {
+                transform: rotate(90deg) translateX(-50%);
+                right: auto;
+                top: 80px;
+                left: 50%;
+            }
+
+            .bubble-arrow::after {
+                transform: rotate(180deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .process-bubble {
+                width: 100px;
+                height: 100px;
+                font-size: 0.7rem;
+                padding: 0.75rem;
+            }
+
+            .bubble-container {
+                padding: 2rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+<div x-data="bubbleFlowApp()" x-init="init()">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-circle-nodes mr-2 text-gray-600"></i>
+                        Process Flow Timeline
+                    </h1>
+                    <p class="text-gray-600 mt-1">Click any bubble for detailed process information</p>
+                </div>
+                <div class="text-sm text-gray-500">
+                    <span x-text="processData.length"></span> processes •
+                    <span x-text="getTotalDuration()"></span> duration
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bubble Flow Container -->
+    <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="bubble-container relative">
+            <!-- Debug Info (remove this after testing) -->
+            <div class="absolute top-4 right-4 bg-yellow-100 p-2 rounded text-xs">
+                Debug: <span x-text="processData.length"></span> items loaded
+            </div>
+
+            <!-- Process Bubbles with Arrows -->
+            <div class="bubble-flow" x-show="processData.length > 0">
+                <template x-for="(process, index) in getSortedProcesses()" :key="process.activityId + '-' + index">
+                    <div class="bubble-with-arrow">
+                        <!-- Process Bubble -->
+                        <div class="process-bubble"
+                             :class="[
+                                 selectedProcess?.activityId === process.activityId ? 'selected' : '',
+                                 (process.type || 'CAMUNDA').toLowerCase()
+                             ]"
+                             @click="selectProcess(process)"
+                             :title="'Click for details: ' + process.definitionKey">
+
+                            <!-- Type Badge -->
+                            <div class="type-badge" x-text="process.type || 'CAMUNDA'"></div>
+
+                            <!-- Type Icon -->
+                            <i class="type-icon"
+                               :class="(process.type || 'CAMUNDA') === 'KAFKA' ? 'fas fa-stream' : 'fas fa-cogs'"></i>
+
+                            <!-- Definition Key -->
+                            <div class="definition-key" x-text="formatDefinitionKey(process.definitionKey)"></div>
+
+                            <!-- Time Info (shown on hover) -->
+                            <div class="time-info">
+                                <div x-text="formatTime(process.startTime)"></div>
+                                <div x-text="getRelativeTime(process.startTime)"></div>
+                            </div>
+                        </div>
+
+                        <!-- Arrow (not for last item) -->
+                        <div x-show="index < getSortedProcesses().length - 1"
+                             class="bubble-arrow"></div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- No Data Message -->
+            <div x-show="processData.length === 0" class="text-center py-20">
+                <i class="fas fa-exclamation-circle text-gray-400 text-6xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">No Process Data</h3>
+                <p class="text-gray-500">No activities found to display.</p>
+            </div>
+
+            <!-- Info Panel with Legend -->
+            <div class="absolute bottom-4 left-4 bg-white bg-opacity-95 border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div class="flex flex-col space-y-3">
+                    <!-- Legend -->
+                    <div class="flex items-center space-x-4 text-gray-600 text-sm">
+                        <div class="legend-item">
+                            <div class="legend-bubble camunda"></div>
+                            <span>Camunda Process</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-bubble kafka"></div>
+                            <span>Kafka Message</span>
+                        </div>
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="flex items-center space-x-4 text-gray-600 text-sm border-t pt-3">
+                        <div class="flex items-center">
+                            <i class="fas fa-arrow-right text-gray-400 mr-2"></i>
+                            <span>Flow Direction</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-mouse-pointer mr-2"></i>
+                            <span>Click for details</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Process Detail Modal -->
+    <div x-show="selectedProcess"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto detail-modal"
+         style="display: none;"
+         @click.self="closeModal()">
+
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Modal Content -->
+            <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full border border-gray-200"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+
+                <!-- Modal Header -->
+                <div class="px-6 py-4"
+                     :class="(selectedProcess?.type || 'CAMUNDA') === 'KAFKA' ? 'bg-purple-800' : 'bg-blue-800'">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center mr-4"
+                                 :class="(selectedProcess?.type || 'CAMUNDA') === 'KAFKA' ? 'bg-purple-700' : 'bg-blue-700'">
+                                <i :class="(selectedProcess?.type || 'CAMUNDA') === 'KAFKA' ? 'fas fa-stream text-purple-300 text-xl' : 'fas fa-cogs text-blue-300 text-xl'"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="text-xl font-bold text-white" x-text="getProcessDisplayName(selectedProcess?.definitionKey || '')"></h3>
+                                    <span class="px-2 py-1 text-xs rounded-full font-semibold"
+                                          :class="(selectedProcess?.type || 'CAMUNDA') === 'KAFKA' ? 'bg-purple-600 text-purple-100' : 'bg-blue-600 text-blue-100'"
+                                          x-text="selectedProcess?.type || 'CAMUNDA'"></span>
+                                </div>
+                                <p class="text-gray-300 text-sm font-mono" x-text="selectedProcess?.definitionKey"></p>
+                            </div>
+                        </div>
+                        <button @click="closeModal()" class="text-gray-300 hover:text-white transition-colors">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="px-6 py-6 bg-gray-50" x-show="selectedProcess">
+                    <!-- Process Info Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Basic Info -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                    <span class="px-3 py-1 rounded-full text-sm font-semibold"
+                                          :class="(selectedProcess?.type || 'CAMUNDA') === 'KAFKA' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'"
+                                          x-text="selectedProcess?.type || 'CAMUNDA'"></span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Definition Key</label>
+                                <div class="bg-white rounded-lg p-3 font-mono text-sm break-all border border-gray-200" x-text="selectedProcess?.definitionKey"></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Activity ID</label>
+                                <div class="bg-white rounded-lg p-3 font-mono text-xs text-gray-600 break-all border border-gray-200" x-text="selectedProcess?.activityId"></div>
+                            </div>
+                        </div>
+
+                        <!-- Timing Info -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                                <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                    <div class="font-semibold text-gray-900" x-text="formatDateTime(selectedProcess?.startTime)"></div>
+                                    <div class="text-sm text-gray-600" x-text="getRelativeTime(selectedProcess?.startTime)"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Execution Order</label>
+                                <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                    <div class="font-semibold text-gray-900" x-text="'Position ' + (getProcessTimeIndex(selectedProcess) + 1) + ' of ' + processData.length"></div>
+                                    <div class="text-sm text-gray-600">In chronological order</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Process Flow Context -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4">Complete Process Timeline</h4>
+                        <div class="space-y-2 max-h-64 overflow-y-auto">
+                            <template x-for="(process, index) in getSortedProcesses()" :key="process.activityId + '-timeline-' + index">
+                                <div class="flex items-center justify-between p-3 rounded-lg transition-colors border"
+                                     :class="process.activityId === selectedProcess?.activityId ?
+                                                'bg-gray-100 border-gray-400' : 'bg-white border-gray-200'">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold mr-3 border"
+                                             :class="process.activityId === selectedProcess?.activityId ?
+                                                        'bg-gray-600 text-white border-gray-600' :
+                                                        'bg-white text-gray-600 border-gray-300'">
+                                            <span x-text="index + 1"></span>
+                                        </div>
+                                        <div>
+                                            <div class="flex items-center space-x-2">
+                                                <div class="font-medium text-gray-900" x-text="formatDefinitionKey(process.definitionKey)"></div>
+                                                <span class="px-2 py-0.5 text-xs rounded-full font-semibold"
+                                                      :class="(process.type || 'CAMUNDA') === 'KAFKA' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'"
+                                                      x-text="process.type || 'CAMUNDA'"></span>
+                                            </div>
+                                            <div class="text-xs text-gray-500 font-mono" x-text="process.definitionKey"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right text-sm">
+                                        <div class="text-gray-900" x-text="formatTime(process.startTime)"></div>
+                                        <div class="text-gray-500 text-xs" x-text="getRelativeTime(process.startTime)"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="bg-white px-6 py-4 flex justify-between items-center border-t border-gray-200">
+                    <div class="text-sm text-gray-500">
+                        Process execution flow visualization
+                    </div>
+                    <button @click="closeModal()"
+                            class="px-6 py-2 rounded-lg transition-colors"
+                            :class="(selectedProcess?.type || 'CAMUNDA') === 'KAFKA' ? 'bg-purple-800 hover:bg-purple-700 text-white' : 'bg-blue-800 hover:bg-blue-700 text-white'">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function bubbleFlowApp() {
+        return {
+            processData: [],
+            selectedProcess: null,
+
+            init() {
+                console.log('Initializing bubble flow app...');
+
+                // Your hardcoded data - exactly as provided
+                this.processData = [
+                    {"type":"CAMUNDA","activityId":"6b30f645-68fd-11ef-9fe1-ae9023e3938f","startTime":"2024-09-02T05:31:50.616+00:00","definitionKey":"MainDeclarationValidationProcess"},
+                    {"type":"CAMUNDA","activityId":"6ba62600-68fd-11ef-9fe1-ae9023e3938f","startTime":"2024-09-02T05:31:51.384+00:00","definitionKey":"VAL_Guarantee_Authorization_Validation_Process"},
+                    {"type":"CAMUNDA","activityId":"6b721d4a-68fd-11ef-9fe1-ae9023e3938f","startTime":"2024-09-02T05:31:51.043+00:00","definitionKey":"VAL_Authorization_Validation_Process"},
+                    {"type":"CAMUNDA","activityId":"6b30f645-68fd-11ef-9fe1-ae9023e3938f","startTime":"2024-09-02T05:31:50.616+00:00","definitionKey":"MainDeclarationValidationProcess"},
+                    {"type":"CAMUNDA","activityId":"6cbdfe73-68fd-11ef-9fe1-ae9023e3938f","startTime":"2024-09-02T05:31:53.218+00:00","definitionKey":"Process_Handle_Call_to_External_System_v2"},
+                    {"type":"KAFKA","activityId":"1","startTime":"2024-09-02T05:31:53.105+00:00","definitionKey":"other-topic"},
+                    {"type":"CAMUNDA","activityId":"6cb26658-68fd-11ef-9fe1-ae9023e3938f","startTime":"2024-09-02T05:31:53.142+00:00","definitionKey":"Process_External_System_Validation_v2"},
+                    {"type":"CAMUNDA","activityId":"6cbdb038-68fd-11ef-9fe1-ae9023e3938f","startTime":"2024-09-02T05:31:53.216+00:00","definitionKey":"Process_Handle_Call_to_External_System_v2"},
+                    {"type":"KAFKA","activityId":"1","startTime":"2025-09-30T18:34:36.735+00:00","definitionKey":"asr-test-topic"}
+                ];
+
+                console.log('Process data loaded:', this.processData.length, 'items');
+            },
+
+            selectProcess(process) {
+                console.log('Selected process:', process);
+                this.selectedProcess = process;
+            },
+
+            closeModal() {
+                this.selectedProcess = null;
+            },
+
+            getSortedProcesses() {
+                return [...this.processData].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+            },
+
+            getProcessTimeIndex(process) {
+                if (!process) return -1;
+                return this.getSortedProcesses().findIndex(p => p.activityId === process.activityId);
+            },
+
+            formatDefinitionKey(definitionKey) {
+                if (!definitionKey) return '';
+                // Shorten and format definition key for display in bubble
+                return definitionKey
+                    .replace(/_/g, ' ')
+                    .replace(/Process/gi, 'Proc')
+                    .replace(/Validation/gi, 'Val')
+                    .replace(/External/gi, 'Ext')
+                    .replace(/System/gi, 'Sys')
+                    .replace(/Declaration/gi, 'Decl')
+                    .replace(/Initialize/gi, 'Init')
+                    .replace(/Handle/gi, 'Hdl')
+                    .trim();
+            },
+
+            getProcessDisplayName(definitionKey) {
+                if (!definitionKey) return '';
+                return definitionKey
+                    .replace(/_/g, ' ')
+                    .replace(/([A-Z])/g, ' $1')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ');
+            },
+
+            formatTime(timeString) {
+                if (!timeString) return '';
+                const date = new Date(timeString);
+                return date.toLocaleTimeString('en-US', {
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            },
+
+            formatDateTime(timeString) {
+                if (!timeString) return '';
+                const date = new Date(timeString);
+                return date.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+            },
+
+            getRelativeTime(timeString) {
+                if (!timeString || this.processData.length === 0) return '';
+
+                const date = new Date(timeString);
+                const firstDate = new Date(this.getSortedProcesses()[0].startTime);
+                const diffMs = date - firstDate;
+
+                if (diffMs === 0) return 'Start';
+
+                const diffSeconds = Math.floor(diffMs / 1000);
+                const diffMs_remainder = diffMs % 1000;
+
+                if (diffSeconds === 0) {
+                    return `+${diffMs_remainder}ms`;
+                } else if (diffSeconds < 60) {
+                    return `+${diffSeconds}.${Math.floor(diffMs_remainder / 100)}s`;
+                } else {
+                    const minutes = Math.floor(diffSeconds / 60);
+                    const seconds = diffSeconds % 60;
+                    return `+${minutes}m ${seconds}s`;
+                }
+            },
+
+            getTotalDuration() {
+                if (this.processData.length < 2) return '0s';
+
+                const sorted = this.getSortedProcesses();
+                const first = new Date(sorted[0].startTime);
+                const last = new Date(sorted[sorted.length - 1].startTime);
+                const diffMs = last - first;
+
+                const seconds = (diffMs / 1000).toFixed(1);
+                return `${seconds}s`;
+            }
+        }
+    }
+</script>
+</body>
+</html>

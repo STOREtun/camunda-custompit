@@ -1,6 +1,6 @@
-package custompit.workflow;
+package custompit.camunda.workflow;
 
-import custompit.enums.FlowVariable;
+import custompit.camunda.enums.FlowVariable;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.stereotype.Component;
 

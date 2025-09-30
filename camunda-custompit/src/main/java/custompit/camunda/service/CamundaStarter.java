@@ -1,6 +1,6 @@
-package custompit.service;
+package custompit.camunda.service;
 
-import custompit.enums.StartableFlows;
+import custompit.camunda.enums.StartableFlows;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,7 @@ public class CamundaStarter {
     }
 
     public String startNewCamundaFlow(StartableFlows flowToStart){
-        ProcessInstance instance = runtimeService.startProcessInstanceById(flowToStart.getFlowId());
+        ProcessInstance instance = runtimeService.startProcessInstanceByKey(flowToStart.getFlowKey());
         return instance.getProcessInstanceId();
     }
 }

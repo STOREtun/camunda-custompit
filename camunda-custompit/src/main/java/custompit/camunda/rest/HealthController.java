@@ -1,4 +1,4 @@
-package custompit.rest;
+package custompit.camunda.rest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

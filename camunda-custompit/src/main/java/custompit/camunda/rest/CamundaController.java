@@ -1,8 +1,7 @@
-package custompit.rest;
+package custompit.camunda.rest;
 
-import camundajar.impl.scala.Predef;
-import custompit.enums.StartableFlows;
-import custompit.service.CamundaStarter;
+import custompit.camunda.enums.StartableFlows;
+import custompit.camunda.service.CamundaStarter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +19,9 @@ public class CamundaController {
 
     @GetMapping("/camunda/start/master")
     public ResponseEntity<String> startMasterFlow(){
-        String processId = camundaStarter.startNewCamundaFlow(StartableFlows.MASTER);
-        String responseMessage = String.format("Started Process with id %s", processId);
-        return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+        return new ResponseEntity<>("Not implemented right now", HttpStatus.OK);
+//        String processId = camundaStarter.startNewCamundaFlow(StartableFlows.MASTER);
+//        String responseMessage = String.format("Started Process with id %s", processId);
+//        return new ResponseEntity<>(responseMessage, HttpStatus.OK);
     }
 }

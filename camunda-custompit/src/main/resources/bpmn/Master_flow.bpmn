@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0bxr1wx" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.34.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
   <bpmn:process id="master_flow" name="Master Flow" isExecutable="true">
-    <bpmn:startEvent id="StartEvent_1">
+    <bpmn:startEvent id="StartEvent_1" camunda:asyncBefore="true">
       <bpmn:outgoing>Flow_0jx2oka</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_0jx2oka" sourceRef="StartEvent_1" targetRef="Requester" />
-    <bpmn:sequenceFlow id="Flow_0mb6kc9" sourceRef="Requester" targetRef="final_printer" />
     <bpmn:sequenceFlow id="Flow_0j4reur" sourceRef="final_printer" targetRef="Event_0f4ah0w" />
     <bpmn:callActivity id="Requester" name="Generate request" calledElement="child_flow">
       <bpmn:extensionElements>
         <camunda:in businessKey="#{execution.processBusinessKey}" />
         <camunda:in variables="all" />
+        <camunda:out source="FINAL_STATEMENT" target="FINAL_STATEMENT" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0jx2oka</bpmn:incoming>
       <bpmn:outgoing>Flow_0mb6kc9</bpmn:outgoing>
@@ -19,10 +19,11 @@
       <bpmn:incoming>Flow_0j4reur</bpmn:incoming>
       <bpmn:terminateEventDefinition id="TerminateEventDefinition_116s14q" />
     </bpmn:endEvent>
-    <bpmn:serviceTask id="final_printer" name="Print response" camunda:delegateExpression="${masterFlowFacade.printFinalStatement(execution)}">
+    <bpmn:serviceTask id="final_printer" name="Print response" camunda:expression="${masterFlowFacade.printFinalStatement(execution)}">
       <bpmn:incoming>Flow_0mb6kc9</bpmn:incoming>
       <bpmn:outgoing>Flow_0j4reur</bpmn:outgoing>
     </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0mb6kc9" sourceRef="Requester" targetRef="final_printer" />
     <bpmn:textAnnotation id="TextAnnotation_0cc5bzb">
       <bpmn:text>Prints the final print</bpmn:text>
     </bpmn:textAnnotation>
