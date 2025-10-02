@@ -37,10 +37,10 @@ class CamundaActivityControllerSpec extends Specification{
         Mockito.when(mockService.getActivitiesWithBusinessKey(Mockito.anyString())).thenReturn(createOKMockResponse())
         CamundaActivityController controller = new CamundaActivityController(mockService)
 
-        when:
+        when: "The rest endpoint is called"
         ResponseEntity<ApiResponse> response = controller.findProcessesFromBusinessKey("somekey")
 
-        then:
+        then: "The mocked entity found by the service is returned in an ApiResponse class"
         assert response.getStatusCode() == HttpStatus.OK
         ApiResponse apiResponse = response.getBody()
         assert apiResponse.getActivities().size() == 1
