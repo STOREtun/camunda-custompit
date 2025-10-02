@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @org.springframework.web.bind.annotation.RestController
 public class CamundaController {
@@ -17,11 +18,10 @@ public class CamundaController {
         this.camundaStarter = camundaStarter;
     }
 
-    @GetMapping("/camunda/start/master")
-    public ResponseEntity<String> startMasterFlow(){
-        return new ResponseEntity<>("Not implemented right now", HttpStatus.OK);
-//        String processId = camundaStarter.startNewCamundaFlow(StartableFlows.MASTER);
-//        String responseMessage = String.format("Started Process with id %s", processId);
-//        return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+    @GetMapping("/camunda/start/master/{businessKey}")
+    public ResponseEntity<String> startMasterFlow(@PathVariable String businessKey){
+        String processId = camundaStarter.startNewCamundaFlow(StartableFlows.MASTER, businessKey);
+        String responseMessage = String.format("Started Process with id %s", processId);
+        return new ResponseEntity<>(responseMessage, HttpStatus.OK);
     }
 }

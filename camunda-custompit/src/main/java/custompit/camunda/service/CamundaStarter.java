@@ -16,8 +16,9 @@ public class CamundaStarter {
         this.runtimeService = runtimeService;
     }
 
-    public String startNewCamundaFlow(StartableFlows flowToStart){
-        ProcessInstance instance = runtimeService.startProcessInstanceByKey(flowToStart.getFlowKey());
+    public String startNewCamundaFlow(StartableFlows flowToStart, String businessKey){
+        ProcessInstance instance = runtimeService.startProcessInstanceByKey(flowToStart.getFlowKey(), businessKey);
+        // todo handle errors
         return instance.getProcessInstanceId();
     }
 }

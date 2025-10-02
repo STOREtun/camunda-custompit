@@ -5,7 +5,7 @@
     <groupId>org.example</groupId>
     <artifactId>camunda-custompit</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>Archetype - camunda-custompit</name>
+    <name>Camunda-custompit</name>
     <url>http://maven.apache.org</url>
 
     <properties>
@@ -20,6 +20,8 @@
             <groupId>org.camunda.bpm</groupId>
             <artifactId>camunda-bom</artifactId>
             <version>7.15.0</version>
+            <scope>import</scope>
+            <type>pom</type>
         </dependency>
 
         <dependency>
@@ -45,6 +47,8 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-dependencies</artifactId>
             <version>2.4.3</version>
+            <type>pom</type>
+            <scope>import</scope>
         </dependency>
 
         <dependency>
@@ -65,12 +69,18 @@
             <version>2.4.3</version>
         </dependency>
 
-<!--        POSTGRES-->
+<!--        DATABASES -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>42.7.7</version>
             <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.1.214</version>
         </dependency>
 
 <!--        SPOCK-->
